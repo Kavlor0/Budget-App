@@ -7,6 +7,33 @@ from currency_converter import CurrencyConverter
 
 st.title("💸 Budget Splitter")
 
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+def check_password():
+    """Prüft das Passwort und aktualisiert den Status"""
+    # Wir holen das Passwort aus dem Eingabefeld
+    entered_password = st.session_state["password_input"]
+    
+    # Wir vergleichen es mit dem Passwort in den Secrets
+    if entered_password == st.secrets["app_password"]:
+        st.session_state.logged_in = True
+        # Passwort aus dem Speicher löschen (Sicherheit)
+        del st.session_state["password_input"]
+    else:
+        st.error("Falsches Passwort! 🚫")
+
+# 2. Wenn NICHT eingeloggt -> Zeige nur das Login-Feld
+if not st.session_state.logged_in:
+    st.text_input(
+        "Bitte Passwort eingeben:", 
+        type="password",  # Versteckt die Zeichen als Punkte
+        key="password_input", 
+        on_change=check_password # Führt die Prüfung aus, wenn man Enter drückt
+    )
+    # WICHTIG: Hier stoppen wir alles Weitere!
+    st.stop()
+
 c = CurrencyConverter()
 
 # 1. Verbindung herstellen
