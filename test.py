@@ -34,6 +34,39 @@ if not st.session_state.logged_in:
     # WICHTIG: Hier stoppen wir alles Weitere!
     st.stop()
 
+
+def custom_progress_bar(wert, max_wert, label="", farbe = "#0000ff"):
+    # 1. Prozent berechnen (zwischen 0 und 100)
+    if wert < 0:
+        prozent = 0
+    elif max_wert > 0:
+        prozent = (wert / max_wert) * 100
+    else:
+        prozent = 100
+    
+    # Sicherstellen, dass der Balken nicht länger als 100% wird (für die Optik)
+    bar_width = min(prozent, 100)
+
+    # 3. HTML & CSS bauen
+    st.markdown(f"""
+        <div style="margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span style="font-weight: bold;">{label}</span>
+                <span>{wert:.2f}€ / {max_wert:.2f}€ ({prozent:.0f}%)</span>
+            </div>
+            <div style="width: 100%; background-color: #f0f2f6; border-radius: 10px; height: 20px;">
+                <div style="
+                    width: {bar_width}%; 
+                    background-color: {farbe}; 
+                    height: 100%; 
+                    border-radius: 10px;
+                    transition: width 0.5s ease-in-out;
+                    ">
+                </div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
 c = CurrencyConverter()
 
 # 1. Verbindung herstellen
@@ -86,6 +119,25 @@ farben = {
   "Vanuatu": "#ffff4d",
 }
 
+@st.dialog("Details")
+def show_day(day):
+    #mask = data["Datum"] == day
+    data_day = data[data["Datum"] == day]
+    st.write(data_day["Datum"].item())
+    keys = ["Übernachtung", "Essen", "Transport", "Orga", "Aktivitäten", "Sonstiges"]
+    #progress_pius = max(data_day["Pius"].item()/data_day["Budget"].item(), 0)
+    #progress_alina = max(data_day["Alina"].item()/data_day["Budget"].item(), 0)
+    #st.write(data_day["Alina"].item())
+    custom_progress_bar(data_day["Alina"].item(), data_day["Budget"].item(), "Rest Budget Alina:", "#ff0000")
+    custom_progress_bar(data_day["Pius"].item(), data_day["Budget"].item(), "Rest Budget Pius:")
+    for key in keys:
+        #st.write(key)
+        if data_day[key].item():
+            st.write(f"Ausgaben für {key}: {data_day[key].item()}")
+    #st.write(data_day["Pius"].item())
+    #st.progress(progress_pius, f"Rest Budget Pius: {data_day["Pius"].item()}")
+
+
 tab_kalender, tab_eintragen = st.tabs(["📅 Kalender & Übersicht", "➕ Kosten hinzufügen"])
 
 #st.subheader("Dein Budget-Kalender 🗓️")
@@ -125,9 +177,9 @@ with tab_kalender:
         "editable": False,         # User kann Drag&Drop im Kalender machen? (erstmal aus)
         "navLinks": True,          # Klick auf Tag springt zur Tagesansicht
         "headerToolbar": {
-            "left": "today prev,next",
+            "left": "prev,next",
             "center": "title",
-            "right": "dayGridMonth,listMonth" # Umschalter Monat / Liste
+            "right": "today" # Umschalter Monat / Liste
         },
         "initialDate": "2026-01-14", # Startdatum deiner Reise
         "locale": "de",
@@ -146,10 +198,11 @@ with tab_kalender:
     # Optional: Wenn man auf ein Event klickt, Details anzeigen
     if calendar.get("eventClick"):
         event_data = calendar["eventClick"]["event"]
+        show_day(event_data["start"])
         # Prüfen, ob es ein normales Event ist (Background events haben oft keine extendedProps)
-        if "extendedProps" in event_data:
-            props = event_data["extendedProps"]
-            st.info(f"Details zum {event_data['start']}: {props.get('description', '')}")
+        #if "extendedProps" in event_data:
+        #    props = event_data["extendedProps"]
+        #    st.info(f"Details zum {event_data['start']}: {props.get('description', '')}")
 
     col1, col2 = st.columns(2)
     col1.metric("Externes Budget Alina", f"{external_budget_alina}€", f"{budget_delta_alina}€", border=True)
