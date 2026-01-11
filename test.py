@@ -75,6 +75,8 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 # 2. Bestehende Daten laden (ttl=0 verhindert, dass alte Daten im Cache bleiben)
 data = conn.read(worksheet="Calendar", ttl=600)
 
+transactions = conn.read(worksheet="Transactions", ttl=600)
+
 df_config = conn.read(worksheet="Globals", ttl=600)
 external_budget_alina = float(df_config[df_config["Key"] == "ExternalBudgetAlina"]["Value"].iloc[0])
 budget_delta_alina = float(df_config[df_config["Key"] == "DeltaAlina"]["Value"].iloc[0])
@@ -137,8 +139,64 @@ def show_day(day):
     #st.write(data_day["Pius"].item())
     #st.progress(progress_pius, f"Rest Budget Pius: {data_day["Pius"].item()}")
 
+@st.dialog("Transaktion Löschen")
+def delete_transaction(selection):
+    if selection:
+        transaction = transactions.iloc[selection[0]]
+        anzahl_tage = (date.fromisoformat(transaction["Bis"]) - date.fromisoformat(transaction["Von"])).days + 1
+                
+        # Kosten pro Tag berechnen
+        kosten_pro_tag = round(transaction["Betrag"] / anzahl_tage, 2)
+        
+        st.info(f"Zeitraum: {anzahl_tage} Tage. Kosten pro Tag: {kosten_pro_tag}€")
 
-tab_kalender, tab_eintragen = st.tabs(["📅 Kalender & Übersicht", "➕ Kosten hinzufügen"])
+        updated_df = data.copy()
+        match_found = False
+        
+        # Loop durch die gewählten Tage
+        current_date = date.fromisoformat(transaction["Von"])
+        for _ in range(anzahl_tage):
+            date_str = current_date.strftime("%Y-%m-%d")
+            
+            # --- DIE WICHTIGE ÄNDERUNG ---
+            # Suche die Zeile, wo das Datum übereinstimmt
+            mask = updated_df["Datum"] == date_str
+            
+            if mask.any():
+                match_found = True
+                
+                if transaction["Für"] == "Beide":
+                    updated_df.loc[mask, "Alina"] += kosten_pro_tag/2
+                    updated_df.loc[mask, "Pius"] += kosten_pro_tag/2
+                    updated_df.loc[mask, beschreibung] -= kosten_pro_tag/2
+                elif transaction["Für"] == "Jeweils":
+                    updated_df.loc[mask, "Alina"] += kosten_pro_tag
+                    updated_df.loc[mask, "Pius"] += kosten_pro_tag
+                    updated_df.loc[mask, beschreibung] -= kosten_pro_tag
+                elif transaction["Für"] == "Alina":                    
+                    updated_df.loc[mask, "Alina"] += kosten_pro_tag                      
+                    updated_df.loc[mask, beschreibung] -= kosten_pro_tag
+                else:
+                    updated_df.loc[mask, "Pius"] += kosten_pro_tag
+                    updated_df.loc[mask, beschreibung] -= kosten_pro_tag
+            
+            current_date += timedelta(days=1)
+        
+        if match_found:
+            # Update zu Google senden
+            updated_transactions = transactions.drop(selection[0])
+            conn.update(data=updated_df)
+            conn.update(worksheet="Transactions", data=updated_transactions)
+            st.success(f"Gespeichert! {kosten_pro_tag}€ pro Tag hinzugefügt.")
+            st.cache_data.clear()
+            st.rerun()
+        else:
+            st.warning("Keine passenden Tage in der Tabelle gefunden! Liegt das Datum zwischen 14.01.26 und 25.04.26?")
+        st.success("Erfolgreich rückgängig gemacht!")
+    else:
+        st.warning("Es wurde keine Transaktion ausgewählt")
+
+tab_kalender, tab_eintragen, tab_transaktionen = st.tabs(["📅 Kalender & Übersicht", "➕ Kosten hinzufügen", "Transaktionen"])
 
 #st.subheader("Dein Budget-Kalender 🗓️")
 with tab_kalender:
@@ -147,7 +205,7 @@ with tab_kalender:
 
     for index, row in data.iterrows():
         calendar_events.append({
-            "title": f"{row['Alina']}€",  # Was im Kalender steht
+            "title": f"{round(row['Alina'], 2)}€",  # Was im Kalender steht
             "start": row["Datum"],          # Das Datum (Format YYYY-MM-DD passt perfekt)
             "end": row["Datum"],
             "allDay": True,                 # Ganztägiges Event
@@ -156,7 +214,7 @@ with tab_kalender:
             "borderColor": "#ff0000",
         })
         calendar_events.append({
-            "title": f"{row['Pius']}€",  # Was im Kalender steht
+            "title": f"{round(row['Pius'], 2)}€",  # Was im Kalender steht
             "start": row["Datum"],          # Das Datum (Format YYYY-MM-DD passt perfekt)
             "end": row["Datum"],
             "allDay": True,                 # Ganztägiges Event
@@ -167,7 +225,7 @@ with tab_kalender:
         calendar_events.append({
             "display": "background",
             "backgroundColor": farben[row["Land"]],
-            "title": f"{row['Land']}",  # Was im Kalender steht
+            #"title": f"{row['Land']}",  # Was im Kalender steht
             "start": row["Datum"],          # Das Datum (Format YYYY-MM-DD passt perfekt)
             "end": row["Datum"],
         })
@@ -205,8 +263,8 @@ with tab_kalender:
         #    st.info(f"Details zum {event_data['start']}: {props.get('description', '')}")
 
     col1, col2 = st.columns(2)
-    col1.metric("Externes Budget Alina", f"{external_budget_alina}€", f"{budget_delta_alina}€", border=True)
-    col2.metric("Externes Budget Pius", f"{external_budget_pius}€", f"{budget_delta_pius}€", border=True)
+    col1.metric("Externes Budget Alina 🐖🪙", f"{external_budget_alina}€", f"{budget_delta_alina}€", border=True)
+    col2.metric("Externes Budget Pius 🐖🪙", f"{external_budget_pius}€", f"{budget_delta_pius}€", border=True)
 
 #st.divider()
 
@@ -299,12 +357,27 @@ with tab_eintragen:
                 
                 if match_found:
                     # Update zu Google senden
+                    new_transaction = [{
+                        "Eingetragen": date.today(),
+                        "Von": start_datum,
+                        "Bis": end_datum,
+                        "Für": person,
+                        "Betrag": final_euro_amount,
+                        "Verwendung": beschreibung
+                    }]
+                    new_df = pd.DataFrame(new_transaction)
+                    updated_transactions = pd.concat([transactions, new_df], ignore_index=True)
                     conn.update(data=updated_df)
+                    conn.update(worksheet="Transactions", data=updated_transactions)
                     st.success(f"Gespeichert! {kosten_pro_tag}€ pro Tag hinzugefügt.")
                     st.cache_data.clear()
                     st.rerun()
                 else:
                     st.warning("Keine passenden Tage in der Tabelle gefunden! Liegt das Datum zwischen 14.01.26 und 25.04.26?")
+
+with tab_transaktionen:
+    event = st.dataframe(transactions, on_select="rerun", selection_mode="single-row")
+    st.button("Zurücksetzen", on_click=delete_transaction, args=([event.selection["rows"]]))
 
 with st.sidebar:
     if st.button("🔄 Daten aktualisieren"):
