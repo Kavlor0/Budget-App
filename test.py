@@ -84,7 +84,7 @@ external_budget_pius = float(df_config[df_config["Key"] == "ExternalBudgetPius"]
 budget_delta_pius = float(df_config[df_config["Key"] == "DeltaPius"]["Value"].iloc[0])
 latest_date = date.fromisoformat(df_config[df_config["Key"] == "LatestDate"]["Value"].iloc[0])
 
-today = date.fromisoformat("2026-01-16")
+today = date.today()
 
 if today > latest_date:
     anzahl_tage = (today - latest_date).days
