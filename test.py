@@ -223,16 +223,22 @@ with tab_kalender:
             "backgroundColor": "#0000ff",
             "borderColor": "#0000ff",
         })
-        calendar_events.append({
-            "display": "background",
-            if date.today() > date.fromisoformat(row["Datum"]):
+		if date.today() > date.fromisoformat(row["Datum"]):
+            calendar_events.append({
+                "display": "background",
                 "backgroundColor": farben["Vergangen"],
-            else:
-				"backgroundColor": farben[row["Land"]]
-            #"title": f"{row['Land']}",  # Was im Kalender steht
-            "start": row["Datum"],          # Das Datum (Format YYYY-MM-DD passt perfekt)
-            "end": row["Datum"],
-        })
+                #"title": f"{row['Land']}",  # Was im Kalender steht
+                "start": row["Datum"],          # Das Datum (Format YYYY-MM-DD passt perfekt)
+                "end": row["Datum"],
+            })
+        else:
+			calendar_events.append({
+                "display": "background",
+                "backgroundColor": farben[row["Land"]],
+                #"title": f"{row['Land']}",  # Was im Kalender steht
+                "start": row["Datum"],          # Das Datum (Format YYYY-MM-DD passt perfekt)
+                "end": row["Datum"],
+            })
 
     # 2. Kalender Optionen (Aussehen anpassen)
     calendar_options = {
