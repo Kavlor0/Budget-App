@@ -119,7 +119,7 @@ farben = {
   "Australien": "#b3d1ff",
   "Neuseeland": "#b3e6cc",
   "Vanuatu": "#ffff4d",
-  "Vegangen": "#303030",
+  "Vergangen": "#303030",
 }
 
 @st.dialog("Details")
