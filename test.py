@@ -119,6 +119,7 @@ farben = {
   "Australien": "#b3d1ff",
   "Neuseeland": "#b3e6cc",
   "Vanuatu": "#ffff4d",
+  "Vegangen": "#303030",
 }
 
 @st.dialog("Details")
@@ -224,7 +225,10 @@ with tab_kalender:
         })
         calendar_events.append({
             "display": "background",
-            "backgroundColor": farben[row["Land"]],
+            if date.today() > date.fromisoformat(row["Datum"]):
+                "backgroundColor": farben["Vergangen"],
+            else:
+				"backgroundColor": farben[row["Land"]]
             #"title": f"{row['Land']}",  # Was im Kalender steht
             "start": row["Datum"],          # Das Datum (Format YYYY-MM-DD passt perfekt)
             "end": row["Datum"],
