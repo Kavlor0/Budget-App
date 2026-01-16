@@ -232,7 +232,7 @@ with tab_kalender:
                 "end": row["Datum"],
             })
         else:
-			calendar_events.append({
+            calendar_events.append({
                 "display": "background",
                 "backgroundColor": farben[row["Land"]],
                 #"title": f"{row['Land']}",  # Was im Kalender steht
