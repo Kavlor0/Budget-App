@@ -223,8 +223,7 @@ with tab_kalender:
             "backgroundColor": "#0000ff",
             "borderColor": "#0000ff",
         })
-
-		if date.today() > date.fromisoformat(row["Datum"]):
+        if date.today() > date.fromisoformat(row["Datum"]):
             calendar_events.append({
                 "display": "background",
                 "backgroundColor": farben["Vergangen"],
