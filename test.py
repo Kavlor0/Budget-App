@@ -224,7 +224,7 @@ with tab_kalender:
             "borderColor": "#0000ff",
         })
         if date.today() > date.fromisoformat(row["Datum"]):
-            calendar_events.append({
+                calendar_events.append({
                 "display": "background",
                 "backgroundColor": farben["Vergangen"],
                 #"title": f"{row['Land']}",  # Was im Kalender steht
