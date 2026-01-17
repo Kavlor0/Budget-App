@@ -273,8 +273,8 @@ with tab_kalender:
         #    st.info(f"Details zum {event_data['start']}: {props.get('description', '')}")
 
     col1, col2 = st.columns(2)
-    col1.metric("Externes Budget Alina 🐖🪙", f"{external_budget_alina}€", f"{budget_delta_alina}€", border=True)
-    col2.metric("Externes Budget Pius 🐖🪙", f"{external_budget_pius}€", f"{budget_delta_pius}€", border=True)
+    col1.metric("Externes Budget Alina 🐖🪙", f"{round(external_budget_alina, 2)}€", f"{round(budget_delta_alina, 2)}€", border=True)
+    col2.metric("Externes Budget Pius 🐖🪙", f"{round(external_budget_pius, 2)}€", f"{round(budget_delta_pius, 2)}€", border=True)
 
 #st.divider()
 
