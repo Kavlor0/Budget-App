@@ -249,7 +249,7 @@ with tab_kalender:
             "center": "title",
             "right": "today" # Umschalter Monat / Liste
         },
-        "initialDate": "2026-01-14", # Startdatum deiner Reise
+        "initialDate": str(date.today()), # Startdatum deiner Reise
         "locale": "de",
         "height": "850px",
     }
